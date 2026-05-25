@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Inside Sales Core: Leadership Scorecard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#060b14;font-family:'DM Sans','Segoe UI',sans-serif;color:#e2e8f0;}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;outline:none;cursor:pointer;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:#e2e8f0;border:2px solid #0ea5e9;cursor:pointer;box-shadow:0 0 6px rgba(14,165,233,0.6);}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#e2e8f0;border:2px solid #0ea5e9;cursor:pointer;}
+  ::-webkit-scrollbar{width:6px;height:6px;}
+  ::-webkit-scrollbar-track{background:#0f172a;}
+  ::-webkit-scrollbar-thumb{background:#334155;border-radius:3px;}
+  button{font-family:'DM Sans','Segoe UI',sans-serif;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useEffect}=React;
+
+const MANAGERS=["Heath Hockett","Derek Beckett","Anthony Zasa","Jose Valdez","Michael Hayes"];
+
+const CATEGORIES=[
+  {id:"performance",label:"Performance Execution",weight:0.30,color:"#0ea5e9",icon:"📈",
+   kpis:["Team Attainment %","T4/T5 Attainment %","Forecast Accuracy","Pipeline Coverage","Lead List Penetration"],
+   definition:"Measures the manager's ability to drive their team to hit and exceed quota. This is the most heavily weighted category because revenue production is the primary function of a frontline sales leader. It assesses not just whether the team is hitting numbers, but the quality and sustainability of that attainment — including how well the manager understands their pipeline, focuses effort on top-tier opportunities (T4/T5), accurately calls forecast, and ensures full penetration of assigned lead lists.",
+   why:"A manager who cannot drive consistent team attainment is not effectively leading the sales motion. This category holds leaders accountable to the outcome that matters most to the business.",
+   green:["Team finishes the week at or above 100% of weekly quota run-rate","T4/T5 deals are actively progressed with clear next steps logged in CRM","Forecast submitted on time, within ±5% of actual close","Pipeline coverage is 3x or greater with active, qualified opportunities","Lead list is 90%+ contacted and documented with disposition codes"],
+   yellow:["Team is tracking at 80–94% of weekly quota run-rate with a recovery plan in place","Some T4/T5 deals lack recent activity or next-step documentation","Forecast submitted late once or off by 6–15% of actual","Pipeline coverage falls between 2x–2.9x with some stale opportunities","Lead list penetration between 75–89%; some leads not worked or undocumented"],
+   red:["Team is tracking below 75% of weekly quota with no documented recovery plan","T4/T5 opportunities sitting untouched for 5+ days with no manager inspection","Forecast not submitted, or off by more than 15% of actual","Pipeline coverage below 2x or consists largely of stale/unqualified deals","Lead list penetration below 75%; significant portions of assigned leads ignored"]},
+  {id:"coaching",label:"Coaching & Development",weight:0.25,color:"#8b5cf6",icon:"🎯",
+   kpis:["1:1 Completion %","Call Reviews Completed","Coaching Quality","Rep Improvement Trends"],
+   definition:"Measures the manager's investment in developing their people. Great sales managers are great coaches first. This category evaluates whether 1:1s are happening consistently and with substance, whether call reviews are being conducted with meaningful feedback, and whether reps are actually improving as a result of the coaching they receive. It distinguishes between a manager who 'goes through the motions' and one who drives measurable rep growth.",
+   why:"The #1 lever a frontline manager has to grow revenue is improving the output of each rep on their team. Consistent, high-quality coaching is the mechanism. Without it, rep performance plateaus and attrition risk increases.",
+   green:["100% of scheduled 1:1s completed weekly with documented action items","Minimum 3 call reviews completed per rep per week with written feedback","Coaching conversations tied to specific skill gaps with a follow-up plan","At least one rep shows measurable week-over-week improvement in a tracked metric","Coaching notes logged in CRM or coaching platform within 24 hours of session"],
+   yellow:["80–99% of 1:1s completed; one or two skipped with a documented reason","1–2 call reviews completed per rep; feedback present but surface-level","Coaching conversations happening but not consistently tied to skill gaps","Rep improvement trends flat; coaching has not yet moved the needle","Coaching notes delayed or incomplete in some cases"],
+   red:["Fewer than 80% of 1:1s completed with no documentation or rescheduling","Zero or one call review completed per rep for the week","No evidence of structured coaching conversations; interactions are transactional","Reps showing declining performance with no coaching intervention in record","No coaching documentation exists in CRM or coaching platform"]},
+  {id:"operational",label:"Operational Discipline",weight:0.20,color:"#f59e0b",icon:"⚙️",
+   kpis:["SLA Adherence","Documentation Quality","Process Compliance","Timely Escalations"],
+   definition:"Measures how rigorously the manager runs the operational side of the business. This includes whether SLAs (speed to lead, response times, follow-up cadences) are being enforced, whether CRM data is clean and current, whether the team follows defined sales processes, and whether issues are escalated promptly rather than allowed to fester. Operationally disciplined managers create predictability and reduce friction across the organization.",
+   why:"Operational breakdowns are often silent killers of sales performance. A manager who cannot hold their team to process standards creates downstream problems in forecasting, customer experience, and cross-functional trust. This category ensures leaders are running a tight ship.",
+   green:["All SLAs met at 95%+ for the week (speed to lead, follow-up, response time)","CRM data is current, accurate, and 100% of deals have updated next steps","Team follows defined sales process stages with no unexplained skips","Escalations submitted within the same business day with full context provided","No compliance flags or process violations flagged by ops or quality teams"],
+   yellow:["SLA adherence between 80–94%; a few misses with explanation provided","CRM data mostly current but 1–2 reps have stale or missing opportunity data","Minor process deviations observed; manager aware and correcting","1–2 escalations delayed beyond 24 hours; no pattern of delay","One minor compliance note raised; manager addressing it"],
+   red:["SLA adherence below 80% with no corrective action taken","CRM data significantly outdated; multiple reps missing deal documentation","Team routinely skipping process stages or not following defined sales motion","Escalations delayed 48+ hours or not submitted at all","Recurring compliance violations or ops flags with no manager intervention"]},
+  {id:"talent",label:"Talent Health",weight:0.15,color:"#10b981",icon:"🌱",
+   kpis:["Attrition Rate","Ramp Progression","Rep Engagement","Coaching Plan Effectiveness"],
+   definition:"Measures the health of the manager's team from a people perspective. Talent health reflects how well the manager retains top performers, accelerates new hire ramp, maintains rep engagement and morale, and executes on formal coaching or performance improvement plans. A team with strong talent health is resilient, motivated, and capable of sustaining performance over time — not just in peak weeks.",
+   why:"Hiring is expensive. Losing a rep costs the business 6–12 months of productivity. Managers who proactively invest in talent health reduce avoidable attrition, accelerate new hire contribution, and build team cultures where reps want to perform. This category makes talent stewardship a measurable leadership expectation.",
+   green:["Zero voluntary attrition for the week; no at-risk reps without a documented plan","New hires on ramp are meeting or ahead of milestone targets","Team pulse or informal check-ins reflect high engagement; no morale concerns surfaced","Active PIPs or coaching plans have documented weekly touchpoints and progress notes","Manager can articulate each rep's development status and career trajectory"],
+   yellow:["One rep flagged as at-risk but a retention conversation has been initiated","New hire ramp is slightly behind milestone; manager has a plan to close the gap","One or two reps showing signs of disengagement; manager aware and monitoring","Coaching plans exist but check-ins have been inconsistent this week","Manager has general awareness of rep development but lacks specific next steps"],
+   red:["Voluntary attrition occurs with no prior warning flags or retention effort on record","New hire ramp significantly behind milestones with no documented corrective plan","Multiple reps showing disengagement; manager unaware or not taking action","Active PIPs have no documented weekly touchpoints; plans exist on paper only","Manager cannot speak to individual rep development status when asked"]},
+  {id:"leadership",label:"Leadership & Communication",weight:0.10,color:"#f43f5e",icon:"🗣️",
+   kpis:["W2G Quality","Executive Communication","Cross-Functional Partnership"],
+   definition:"Measures the manager's effectiveness as a communicator and cross-functional partner. This includes the quality of their weekly Win-to-Goal (W2G) updates, the quality of their upward communication in general, and how well they collaborate with adjacent teams (CS, Marketing, Ops, HR, Recruiting). Leadership presence is not just about managing down; it's about communicating clearly and adding value in every direction.",
+   why:"Senior leaders and heads of sales rely on their managers to surface the right information at the right time. Managers who communicate well enable better decisions, build organizational trust, and demonstrate leadership readiness. Poor communication creates blind spots at the executive level and erodes confidence in the manager's judgment.",
+   green:["W2G submitted on time, complete, and tells a clear story of team performance with context","Proactively surfaces risks, needs, or flags to senior leadership without being asked","Cross-functional partners (CS, Ops, HR) describe the manager as responsive and collaborative","Participates constructively in leadership meetings with insights, not just status updates","Communication is concise, data-driven, and decision-ready"],
+   yellow:["W2G submitted on time but lacks depth or context; reads more like a data dump","Communicates reactively; waits to be asked before surfacing risks or updates","Cross-functional relationships are neutral; no major issues but no strong partnership","Participates in leadership meetings but contributions are passive or inconsistent","Communication is present but not always structured or actionable"],
+   red:["W2G submitted late, incomplete, or missing entirely for the week","Senior leadership is surprised by team performance issues that manager did not surface","Cross-functional partners flag responsiveness or collaboration issues","Manager disengaged in leadership forums; does not contribute meaningfully","Communication is reactive, vague, or creates confusion rather than clarity"]}
+];
+
+function getQ3Weeks(){
+  const weeks=[];
+  let start=new Date("2026-07-06");
+  const end=new Date("2026-09-28");
+  let wk=1;
+  while(start<=end){
+    const weekEnd=new Date(start);
+    weekEnd.setDate(start.getDate()+6);
+    weeks.push({id:`W${wk}`,label:`Week ${wk}`,range:`${fmt(start)} – ${fmt(weekEnd)}`,start:new Date(start)});
+    start.setDate(start.getDate()+7);
+    wk++;
+  }
+  return weeks;
+}
+function fmt(d){return d.toLocaleDateString("en-US",{month:"short",day:"numeric"});}
+const WEEKS=getQ3Weeks();
+
+function initScores(){
+  const s={};
+  MANAGERS.forEach(m=>{s[m]={};WEEKS.forEach(w=>{s[m][w.id]={};CATEGORIES.forEach(c=>{s[m][w.id][c.id]=null;});});});
+  return s;
+}
+
+function calcWeekScore(ms,weekId){
+  let total=0,wu=0;
+  CATEGORIES.forEach(c=>{const v=ms[weekId]?.[c.id];if(v!==null&&v!==undefined){total+=v*c.weight;wu+=c.weight;}});
+  if(wu===0)return null;
+  return Math.round((total/wu)*10)/10;
+}
+
+function getColor(score){
+  if(score===null||score===undefined)return{bg:"#1e293b",text:"#64748b",label:"—",ring:"#334155"};
+  if(score>=90)return{bg:"#052e16",text:"#4ade80",label:"MET",ring:"#16a34a"};
+  if(score>=75)return{bg:"#422006",text:"#fbbf24",label:"PARTIAL",ring:"#d97706"};
+  return{bg:"#2d0a0a",text:"#f87171",label:"MISS",ring:"#dc2626"};
+}
+function getDotColor(score){
+  if(score===null||score===undefined)return"#334155";
+  if(score>=90)return"#22c55e";
+  if(score>=75)return"#f59e0b";
+  return"#ef4444";
+}
+
+function SectionHeader({children}){
+  return <div style={{fontSize:10,fontWeight:900,color:"#475569",letterSpacing:"0.15em",textTransform:"uppercase",marginBottom:16,paddingBottom:8,borderBottom:"1px solid #1e293b"}}>{children}</div>;
+}
+
+function FrameworkView(){
+  const[expandedCat,setExpandedCat]=useState(null);
+  return(
+    <div style={{padding:"32px 32px 60px",maxWidth:1000,margin:"0 auto"}}>
+      <div style={{background:"linear-gradient(135deg,#0c1a2e,#0f172a)",border:"1px solid #1e3a5f",borderRadius:20,padding:"36px 40px",marginBottom:32,borderLeft:"4px solid #0ea5e9"}}>
+        <div style={{fontSize:11,color:"#0ea5e9",letterSpacing:"0.15em",textTransform:"uppercase",fontWeight:800,marginBottom:10}}>📖 Framework & Standards — Reference Document</div>
+        <div style={{fontSize:26,fontWeight:900,color:"#f1f5f9",lineHeight:1.2,marginBottom:16}}>Inside Sales Core: Leadership Scorecard</div>
+        <div style={{fontSize:13,color:"#94a3b8",lineHeight:1.8,maxWidth:720}}>This document defines the purpose, methodology, and behavioral standards of the Q3 2026 Leadership Scorecard. It is intended to be shared with HR Business Partners, the Head of Sales, and direct report managers to ensure full transparency in how leadership performance is evaluated, documented, and actioned.</div>
+        <div style={{marginTop:20,display:"flex",gap:10,flexWrap:"wrap"}}>
+          {["HR Reference","Performance Management","Head of Sales Review","Manager Accountability","Q3 2026"].map(tag=>(
+            <span key={tag} style={{fontSize:10,fontWeight:700,color:"#64748b",background:"#1e293b",padding:"4px 10px",borderRadius:20,letterSpacing:"0.05em"}}>{tag}</span>
+          ))}
+        </div>
+      </div>
+
+      <div style={{marginBottom:32}}>
+        <SectionHeader>THE WHAT, WHY, HOW, WHEN & WHERE</SectionHeader>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+          {[
+            {label:"WHAT",icon:"🎯",color:"#0ea5e9",content:"The Inside Sales Core Leadership Scorecard is a structured, weekly performance management tool that evaluates frontline sales managers across five weighted categories: Performance Execution (30%), Coaching & Development (25%), Operational Discipline (20%), Talent Health (15%), and Leadership & Communication (10%). Each category is scored 0–100, weighted, and rolled into a composite weekly score that produces a color-coded rating: Green (≥90%), Yellow (75–89%), or Red (<75%)."},
+            {label:"WHY",icon:"💡",color:"#8b5cf6",content:"Sales organizations fail not because of strategy — they fail because of inconsistent execution at the manager level. This scorecard exists to make leadership accountability visible, consistent, and data-driven. It protects the organization by identifying underperformance early, enables coaching at the senior manager level, provides documentation for HR and performance management, and gives the head of sales a clear weekly picture of leadership health across the team."},
+            {label:"HOW",icon:"⚙️",color:"#f59e0b",content:"Each Friday, the Senior Sales Manager reviews the week's evidence across all five categories for each direct report and assigns a score (0–100) per category. Scores are weighted and rolled up automatically into a composite. The scoring is based on observable behaviors, CRM data, 1:1 completion records, coaching logs, forecast submissions, SLA reports, and cross-functional feedback — not subjective opinion. Ratings are saved and tracked across all 13 weeks of Q3 2026."},
+            {label:"WHEN",icon:"📅",color:"#10b981",content:"The scorecard is completed weekly on a Friday cadence as part of the leadership review rhythm. Individual category data is collected throughout the week — pipeline inspection on Monday, coaching and T4/T5 review on Wednesday, and final scorecard completion on Friday. The Q3 cycle runs from July 6 through September 28, 2026, covering 13 full weeks. Scores are reviewed in senior leadership calibration meetings and referenced in quarterly performance conversations."},
+            {label:"WHERE",icon:"📍",color:"#f43f5e",content:"This scorecard lives in the Senior Sales Manager's leadership management system and is accessible in this digital tool. Evidence supporting each score (CRM reports, coaching logs, call review records, W2G documents, SLA dashboards) should be maintained in the team's designated CRM and documentation systems. HR receives this scorecard as supporting documentation for any formal performance management action. The Head of Sales receives a weekly summary as part of the leadership inspection cadence."},
+            {label:"FOR WHOM",icon:"👥",color:"#a78bfa",content:"This scorecard is used by the Senior Sales Manager as the primary author and rater. It is shared with HR Business Partners to support performance management documentation and formal action plans. It is shared with the Head of Sales / VP of Sales as an accountability and inspection tool for senior leadership. It is shared with each direct report manager as part of their weekly feedback and development conversation — ensuring no surprises and full transparency in how they are being evaluated."},
+          ].map(({label,icon,color,content})=>(
+            <div key={label} style={{background:"#0f172a",border:`1px solid ${color}33`,borderRadius:14,padding:"20px 22px",borderTop:`3px solid ${color}`}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                <span style={{fontSize:16}}>{icon}</span>
+                <span style={{fontSize:11,fontWeight:900,color,letterSpacing:"0.15em"}}>{label}</span>
+              </div>
+              <p style={{fontSize:12,color:"#94a3b8",lineHeight:1.8,margin:0}}>{content}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{marginBottom:32}}>
+        <SectionHeader>SCORING SYSTEM & COLOR THRESHOLDS</SectionHeader>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:14,marginBottom:16}}>
+          {[
+            {bg:"#052e16",ring:"#16a34a",tc:"#4ade80",label:"GREEN — MET / EXCEEDED",score:"≥ 90%",meaning:"Exceeding expectations consistently. Leader is running the business at a high level across all dimensions. Continues on current trajectory. Recognized in calibration as a strong performer.",action:"Positive reinforcement, stretch goals, succession planning conversations."},
+            {bg:"#422006",ring:"#d97706",tc:"#fbbf24",label:"YELLOW — SLIGHT MISS",score:"75–89%",meaning:"Inconsistent execution. There are coaching opportunities in one or more categories. Leader is not failing, but is not meeting the full standard. Early warning indicator.",action:"Targeted coaching plan. Weekly check-in on specific gaps. Not yet a formal HR action but documented as a trend to watch."},
+            {bg:"#2d0a0a",ring:"#dc2626",tc:"#f87171",label:"RED — MISS",score:"< 75%",meaning:"Immediate intervention required. Leader is not meeting the expectations of their role in a significant way. Performance risk to the team and organization.",action:"Formal coaching plan activated. HR notification. Weekly performance review. If sustained across 3+ weeks, escalation to formal PIP process."},
+          ].map(({bg,ring,tc,label,score,meaning,action})=>(
+            <div key={label} style={{background:bg,border:`1.5px solid ${ring}`,borderRadius:14,padding:"18px 20px"}}>
+              <div style={{fontSize:11,fontWeight:900,color:tc,letterSpacing:"0.08em",marginBottom:6}}>{label}</div>
+              <div style={{fontSize:28,fontWeight:900,color:tc,marginBottom:10}}>{score}</div>
+              <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.7,marginBottom:10}}><strong style={{color:"#e2e8f0"}}>Meaning:</strong> {meaning}</div>
+              <div style={{fontSize:11,color:"#94a3b8",lineHeight:1.7}}><strong style={{color:"#e2e8f0"}}>Action:</strong> {action}</div>
+            </div>
+          ))}
+        </div>
+        <div style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:12,padding:"16px 20px"}}>
+          <div style={{fontSize:11,fontWeight:800,color:"#64748b",letterSpacing:"0.08em",marginBottom:8}}>⚖️ IMPORTANT NOTE ON SCORING PHILOSOPHY</div>
+          <p style={{fontSize:12,color:"#94a3b8",lineHeight:1.8,margin:0}}>This scorecard is designed to measure <strong style={{color:"#e2e8f0"}}>leadership judgment and business effectiveness</strong> — not activity completion. A manager should not score green simply because tasks were checked off. The question being answered each week is: <em style={{color:"#cbd5e1"}}>"How effectively is this manager running their business?"</em> Scores should reflect the quality of execution, the depth of coaching, the health of the pipeline, and the strength of the team — not just whether meetings happened or reports were filed.</p>
+        </div>
+      </div>
+
+      <div style={{marginBottom:32}}>
+        <SectionHeader>CATEGORY DEFINITIONS, KPIs & BEHAVIORAL STANDARDS</SectionHeader>
+        <p style={{fontSize:12,color:"#64748b",marginBottom:20,lineHeight:1.7}}>Click any category below to expand the full definition, KPI list, and behavioral examples for Green, Yellow, and Red performance.</p>
+        <div style={{display:"grid",gap:12}}>
+          {CATEGORIES.map(cat=>{
+            const isOpen=expandedCat===cat.id;
+            return(
+              <div key={cat.id} style={{background:"#0f172a",border:`1px solid ${isOpen?cat.color+"66":"#1e293b"}`,borderRadius:14,overflow:"hidden"}}>
+                <button onClick={()=>setExpandedCat(isOpen?null:cat.id)} style={{width:"100%",background:"none",border:"none",cursor:"pointer",padding:"18px 22px",display:"flex",alignItems:"center",justifyContent:"space-between",color:"#e2e8f0"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:12}}>
+                    <span style={{fontSize:18}}>{cat.icon}</span>
+                    <div style={{textAlign:"left"}}>
+                      <div style={{fontSize:15,fontWeight:800}}>{cat.label}</div>
+                      <div style={{fontSize:11,color:"#475569",marginTop:2}}>{Math.round(cat.weight*100)}% of total score · {cat.kpis.length} KPIs tracked</div>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{width:8,height:8,borderRadius:"50%",background:cat.color}}/>
+                    <span style={{fontSize:14,color:"#475569"}}>{isOpen?"▲":"▼"}</span>
+                  </div>
+                </button>
+                {isOpen&&(
+                  <div style={{padding:"0 22px 24px",borderTop:`1px solid ${cat.color}33`}}>
+                    <div style={{marginTop:18,marginBottom:16}}>
+                      <div style={{fontSize:10,fontWeight:800,color:cat.color,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:8}}>Definition</div>
+                      <p style={{fontSize:13,color:"#94a3b8",lineHeight:1.85,margin:0}}>{cat.definition}</p>
+                    </div>
+                    <div style={{background:"#060b14",border:`1px solid ${cat.color}22`,borderRadius:10,padding:"14px 16px",marginBottom:20}}>
+                      <div style={{fontSize:10,fontWeight:800,color:"#64748b",letterSpacing:"0.1em",marginBottom:6}}>WHY THIS MATTERS</div>
+                      <p style={{fontSize:12,color:"#94a3b8",lineHeight:1.8,margin:0}}>{cat.why}</p>
+                    </div>
+                    <div style={{marginBottom:20}}>
+                      <div style={{fontSize:10,fontWeight:800,color:"#64748b",letterSpacing:"0.1em",marginBottom:8}}>WEEKLY KPIs TRACKED</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                        {cat.kpis.map(k=>(
+                          <span key={k} style={{fontSize:11,color:cat.color,background:cat.color+"15",border:`1px solid ${cat.color}33`,padding:"4px 12px",borderRadius:20,fontWeight:600}}>{k}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12}}>
+                      {[
+                        {tier:"GREEN — WHAT GOOD LOOKS LIKE",items:cat.green,bg:"#052e16",ring:"#16a34a",tc:"#4ade80",dot:"#22c55e"},
+                        {tier:"YELLOW — WHAT A SLIGHT MISS LOOKS LIKE",items:cat.yellow,bg:"#422006",ring:"#d97706",tc:"#fbbf24",dot:"#f59e0b"},
+                        {tier:"RED — WHAT A TOTAL MISS LOOKS LIKE",items:cat.red,bg:"#2d0a0a",ring:"#dc2626",tc:"#f87171",dot:"#ef4444"},
+                      ].map(({tier,items,bg,ring,tc,dot})=>(
+                        <div key={tier} style={{background:bg,border:`1px solid ${ring}`,borderRadius:12,padding:"14px 16px"}}>
+                          <div style={{fontSize:10,fontWeight:900,color:tc,letterSpacing:"0.06em",lineHeight:1.4,marginBottom:12}}>{tier}</div>
+                          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                            {items.map((item,i)=>(
+                              <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                                <span style={{width:6,height:6,borderRadius:"50%",background:dot,flexShrink:0,marginTop:5}}/>
+                                <span style={{fontSize:11,color:"#94a3b8",lineHeight:1.6}}>{item}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{marginBottom:32}}>
+        <SectionHeader>HR & PERFORMANCE MANAGEMENT GUIDANCE</SectionHeader>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+          {[
+            {title:"When to Involve HR",icon:"🚨",color:"#f43f5e",points:["Any manager scores Red (<75%) for two consecutive weeks","A manager scores Red in Performance Execution for any single week","Talent Health scores Red, indicating possible attrition risk or team culture concerns","A pattern of Yellow across 4+ consecutive weeks without improvement","Manager fails to submit W2G or complete required operational documentation for 2+ weeks"]},
+            {title:"Documentation Standards",icon:"📁",color:"#0ea5e9",points:["Weekly scores are saved and timestamped in this system for audit trail","Senior manager should maintain supporting evidence (CRM screenshots, coaching logs) in a dedicated folder","Before initiating any formal action, confirm at least 3 weeks of documented scores","HR should receive the full scorecard export, not just the summary color","All verbal coaching conversations should be followed up in writing within 24 hours"]},
+            {title:"Sharing with Your Head of Sales",icon:"📊",color:"#8b5cf6",points:["Share the Q3 Overview view weekly as part of your leadership inspection report","Narrative context should accompany any Red or improving Yellow score","Use this tool to demonstrate proactive performance management — not as a reactive measure","Frame the scorecard as a coaching tool first, performance management tool second","Highlight improvement trends (Yellow → Green) as evidence of effective leadership development"]},
+            {title:"Sharing with Direct Report Managers",icon:"🤝",color:"#10b981",points:["Each manager should see their own scorecard in the weekly 1:1","Walk through each category score and the evidence behind it","Give managers the opportunity to provide context before scores are finalized when possible","Tie scores to specific behaviors, not personality or effort","The goal is to help managers grow — scores should be accompanied by a clear development action each week"]},
+          ].map(({title,icon,color,points})=>(
+            <div key={title} style={{background:"#0f172a",border:`1px solid ${color}33`,borderRadius:14,padding:"20px 22px",borderTop:`3px solid ${color}`}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
+                <span style={{fontSize:16}}>{icon}</span>
+                <span style={{fontSize:13,fontWeight:800,color}}>{title}</span>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {points.map((p,i)=>(
+                  <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start"}}>
+                    <span style={{color,fontSize:12,marginTop:1,flexShrink:0}}>→</span>
+                    <span style={{fontSize:12,color:"#94a3b8",lineHeight:1.7}}>{p}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{background:"#0f172a",border:"1px solid #1e293b",borderRadius:14,padding:"20px 24px",textAlign:"center"}}>
+        <div style={{fontSize:12,color:"#475569",lineHeight:1.8}}>
+          <strong style={{color:"#94a3b8"}}>Inside Sales Core: Leadership Scorecard</strong> · Q3 2026 · Confidential — Internal Use Only<br/>
+          Authored by Senior Sales Manager · For questions, contact HR Business Partner or Head of Sales<br/>
+          <span style={{fontSize:10}}>This document is intended for performance management, leadership development, and organizational accountability purposes only.</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function OverviewView({scores,overviewScore,q3Avg}){
+  return(
+    <div style={{padding:"24px 32px",maxWidth:1200,margin:"0 auto"}}>
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:18,fontWeight:800,color:"#f1f5f9"}}>Q3 2026 — Full Overview</div>
+        <div style={{fontSize:12,color:"#475569",marginTop:2}}>Weekly rollup for all managers · All 13 weeks</div>
+      </div>
+      <div style={{display:"flex",gap:12,marginBottom:28,flexWrap:"wrap"}}>
+        {MANAGERS.map(m=>{
+          const avg=q3Avg(m);const c=getColor(avg);
+          const rated=WEEKS.filter(w=>overviewScore(m,w.id)!==null).length;
+          return(
+            <div key={m} style={{background:c.bg,border:`1.5px solid ${c.ring}`,borderRadius:14,padding:"16px 20px",minWidth:160,flex:1}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#94a3b8",marginBottom:6}}>{m}</div>
+              <div style={{fontSize:30,fontWeight:900,color:c.text}}>{avg!==null?`${avg}%`:"—"}</div>
+              <div style={{fontSize:10,color:"#475569",marginTop:4}}>{rated}/{WEEKS.length} weeks rated</div>
+              <div style={{fontSize:10,fontWeight:800,color:c.text,letterSpacing:"0.1em",marginTop:6,padding:"2px 8px",background:"#00000033",borderRadius:20,display:"inline-block"}}>{avg!==null?c.label:"PENDING"}</div>
+            </div>
+          );
+        })}
+      </div>
+      <div style={{overflowX:"auto"}}>
+        <table style={{width:"100%",borderCollapse:"separate",borderSpacing:"0 6px"}}>
+          <thead>
+            <tr>
+              <th style={{textAlign:"left",padding:"8px 14px",fontSize:10,color:"#475569",fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase"}}>Manager</th>
+              {WEEKS.map(w=>(
+                <th key={w.id} style={{padding:"6px 8px",fontSize:10,color:"#475569",fontWeight:700,textAlign:"center",whiteSpace:"nowrap"}}>
+                  <div>{w.label}</div>
+                  <div style={{fontSize:9,color:"#334155",fontWeight:400}}>{w.range.split("–")[0].trim()}</div>
+                </th>
+              ))}
+              <th style={{padding:"6px 12px",fontSize:10,color:"#94a3b8",fontWeight:800,textAlign:"center"}}>Q3 AVG</th>
+            </tr>
+          </thead>
+          <tbody>
+            {MANAGERS.map(m=>{
+              const avg=q3Avg(m);const ac=getColor(avg);
+              return(
+                <tr key={m}>
+                  <td style={{padding:"10px 14px",fontSize:12,fontWeight:700,color:"#e2e8f0",background:"#0f172a",borderRadius:"10px 0 0 10px",borderLeft:`3px solid ${ac.ring}`,whiteSpace:"nowrap"}}>{m}</td>
+                  {WEEKS.map(w=>{
+                    const s=overviewScore(m,w.id);const c=getColor(s);
+                    return(
+                      <td key={w.id} style={{padding:"8px 6px",textAlign:"center",background:"#0f172a"}}>
+                        <div style={{margin:"0 auto",width:42,height:34,borderRadius:8,background:s!==null?c.bg:"#0a0f1a",border:`1px solid ${s!==null?c.ring:"#1e293b"}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:1}}>
+                          {s!==null?(<><span style={{fontSize:11,fontWeight:800,color:c.text}}>{s}%</span><span style={{width:6,height:6,borderRadius:"50%",background:getDotColor(s)}}/></>):(<span style={{fontSize:14,color:"#1e293b"}}>·</span>)}
+                        </div>
+                      </td>
+                    );
+                  })}
+                  <td style={{padding:"10px 14px",textAlign:"center",background:ac.bg,borderRadius:"0 10px 10px 0",borderRight:`3px solid ${ac.ring}`}}>
+                    <div style={{fontSize:16,fontWeight:900,color:ac.text}}>{avg!==null?`${avg}%`:"—"}</div>
+                    <div style={{fontSize:9,color:ac.text,opacity:0.8,fontWeight:700}}>{avg!==null?ac.label:"PENDING"}</div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <div style={{marginTop:28,display:"flex",gap:20,alignItems:"center",flexWrap:"wrap"}}>
+        <div style={{fontSize:10,color:"#475569",fontWeight:700,letterSpacing:"0.08em"}}>LEGEND:</div>
+        {[["#052e16","#16a34a","GREEN ≥ 90% (Met/Exceeded)"],["#422006","#d97706","YELLOW 75–89% (Slight Miss)"],["#2d0a0a","#dc2626","RED <75% (Miss)"]].map(([bg,ring,label])=>(
+          <div key={label} style={{display:"flex",alignItems:"center",gap:6}}>
+            <div style={{width:12,height:12,borderRadius:3,background:bg,border:`1.5px solid ${ring}`}}/>
+            <span style={{fontSize:11,color:"#64748b"}}>{label}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{marginTop:32,background:"#0f172a",border:"1px solid #1e293b",borderRadius:14,padding:"20px 24px"}}>
+        <div style={{fontSize:13,fontWeight:800,color:"#94a3b8",marginBottom:14,letterSpacing:"0.06em"}}>📅 RECOMMENDED WEEKLY OPERATING RHYTHM</div>
+        <div style={{display:"flex",gap:12,flexWrap:"wrap"}}>
+          {[["MON","Forecast + Pipeline Inspection","#0ea5e9"],["WED","Coaching + T4/T5 Inspection","#8b5cf6"],["FRI","Leadership Scorecard + Miss Analysis","#f43f5e"]].map(([day,focus,color])=>(
+            <div key={day} style={{flex:1,minWidth:180,background:"#060b14",border:`1px solid ${color}33`,borderRadius:10,padding:"14px 16px",borderTop:`3px solid ${color}`}}>
+              <div style={{fontSize:11,fontWeight:800,color,letterSpacing:"0.1em",marginBottom:4}}>{day}</div>
+              <div style={{fontSize:12,color:"#94a3b8"}}>{focus}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const[scores,setScores]=useState(()=>{
+    try{const saved=localStorage.getItem("isc_scorecard_q3_2026");return saved?JSON.parse(saved):initScores();}
+    catch{return initScores();}
+  });
+  const[activeManager,setActiveManager]=useState(MANAGERS[0]);
+  const[activeWeek,setActiveWeek]=useState(WEEKS[0].id);
+  const[view,setView]=useState("scorecard");
+  const[saveFlash,setSaveFlash]=useState(false);
+
+  useEffect(()=>{try{localStorage.setItem("isc_scorecard_q3_2026",JSON.stringify(scores));}catch{};},[scores]);
+
+  function setScore(manager,weekId,catId,val){
+    setScores(prev=>({...prev,[manager]:{...prev[manager],[weekId]:{...prev[manager][weekId],[catId]:val}}}));
+  }
+  function handleSave(){setSaveFlash(true);setTimeout(()=>setSaveFlash(false),1800);}
+
+  const currentWeekScore=calcWeekScore(scores[activeManager],activeWeek);
+  const currentColor=getColor(currentWeekScore);
+  const activeWeekObj=WEEKS.find(w=>w.id===activeWeek);
+  function overviewScore(manager,weekId){return calcWeekScore(scores[manager],weekId);}
+  function q3Avg(manager){
+    const rated=WEEKS.map(w=>calcWeekScore(scores[manager],w.id)).filter(v=>v!==null);
+    if(!rated.length)return null;
+    return Math.round((rated.reduce((a,b)=>a+b,0)/rated.length)*10)/10;
+  }
+
+  const navItems=[{id:"scorecard",label:"📋 Rate Leaders"},{id:"overview",label:"🗓 Q3 Overview"},{id:"framework",label:"📖 Framework & Standards"}];
+
+  return(
+    <div style={{minHeight:"100vh",background:"#060b14",color:"#e2e8f0"}}>
+      <div style={{background:"linear-gradient(135deg,#0f172a 0%,#0c1a2e 100%)",borderBottom:"1px solid #1e3a5f",padding:"18px 32px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:100}}>
+        <div style={{display:"flex",alignItems:"center",gap:14}}>
+          <div style={{width:40,height:40,borderRadius:10,background:"linear-gradient(135deg,#0ea5e9,#6366f1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,fontWeight:900}}>⚡</div>
+          <div>
+            <div style={{fontSize:16,fontWeight:900,letterSpacing:"0.01em",color:"#f1f5f9"}}>Inside Sales Core: Leadership Scorecard</div>
+            <div style={{fontSize:10,color:"#64748b",letterSpacing:"0.1em",textTransform:"uppercase"}}>Q3 2026 · Balanced Executive Framework · Confidential</div>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+          {navItems.map(({id,label})=>(
+            <button key={id} onClick={()=>setView(id)} style={{padding:"7px 14px",borderRadius:8,border:"none",cursor:"pointer",fontSize:11,fontWeight:700,background:view===id?"linear-gradient(135deg,#0ea5e9,#6366f1)":"#1e293b",color:view===id?"#fff":"#94a3b8",transition:"all 0.2s"}}>{label}</button>
+          ))}
+        </div>
+      </div>
+
+      {view==="framework"&&<FrameworkView/>}
+      {view==="overview"&&<OverviewView scores={scores} overviewScore={overviewScore} q3Avg={q3Avg}/>}
+      {view==="scorecard"&&(
+        <div style={{padding:"24px 32px",maxWidth:1100,margin:"0 auto"}}>
+          <div style={{marginBottom:20}}>
+            <div style={{fontSize:10,color:"#475569",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Select Manager</div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              {MANAGERS.map(m=>{
+                const avg=q3Avg(m);const c=getColor(avg);
+                return(
+                  <button key={m} onClick={()=>setActiveManager(m)} style={{padding:"9px 16px",borderRadius:10,border:`1.5px solid ${activeManager===m?c.ring:"#1e293b"}`,background:activeManager===m?c.bg:"#0f172a",color:activeManager===m?c.text:"#94a3b8",cursor:"pointer",fontSize:13,fontWeight:700,transition:"all 0.2s",display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{width:8,height:8,borderRadius:"50%",background:getDotColor(avg),flexShrink:0}}/>
+                    {m}
+                    {avg!==null&&<span style={{fontSize:11,opacity:0.8}}>{avg}%</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div style={{marginBottom:24}}>
+            <div style={{fontSize:10,color:"#475569",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:8}}>Select Week</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {WEEKS.map(w=>{
+                const ws=calcWeekScore(scores[activeManager],w.id);const c=getColor(ws);const isActive=activeWeek===w.id;
+                return(
+                  <button key={w.id} onClick={()=>setActiveWeek(w.id)} style={{padding:"6px 12px",borderRadius:8,border:`1.5px solid ${isActive?c.ring:"#1e293b"}`,background:isActive?c.bg:"#0f172a",color:isActive?c.text:"#64748b",cursor:"pointer",fontSize:11,fontWeight:700,transition:"all 0.2s",display:"flex",flexDirection:"column",alignItems:"center",gap:2,minWidth:58}}>
+                    <span>{w.label}</span>
+                    <span style={{width:6,height:6,borderRadius:"50%",background:getDotColor(ws)}}/>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div style={{background:"linear-gradient(135deg,#0f172a,#0c1a2e)",border:`1.5px solid ${currentColor.ring}`,borderRadius:16,padding:"20px 24px",marginBottom:24,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div>
+              <div style={{fontSize:22,fontWeight:900,color:"#f1f5f9"}}>{activeManager}</div>
+              <div style={{fontSize:12,color:"#64748b",marginTop:3}}>{activeWeekObj?.label} · {activeWeekObj?.range}</div>
+            </div>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:42,fontWeight:900,color:currentColor.text,lineHeight:1}}>{currentWeekScore!==null?`${currentWeekScore}%`:"—"}</div>
+              <div style={{fontSize:11,fontWeight:800,letterSpacing:"0.12em",color:currentColor.text,marginTop:4,padding:"3px 10px",borderRadius:20,background:currentColor.bg,border:`1px solid ${currentColor.ring}`}}>{currentWeekScore!==null?currentColor.label:"NOT RATED"}</div>
+            </div>
+          </div>
+          <div style={{display:"grid",gap:14}}>
+            {CATEGORIES.map(cat=>{
+              const val=scores[activeManager]?.[activeWeek]?.[cat.id];const c=getColor(val);
+              return(
+                <div key={cat.id} style={{background:"#0f172a",border:`1px solid ${val!==null?c.ring+"66":"#1e293b"}`,borderRadius:14,padding:"18px 22px"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <span style={{fontSize:16}}>{cat.icon}</span>
+                      <div>
+                        <span style={{fontSize:14,fontWeight:700,color:"#e2e8f0"}}>{cat.label}</span>
+                        <span style={{marginLeft:8,fontSize:10,color:"#475569",background:"#1e293b",padding:"2px 8px",borderRadius:20,fontWeight:700}}>{Math.round(cat.weight*100)}% weight</span>
+                      </div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <div style={{fontSize:22,fontWeight:900,color:val!==null?c.text:"#334155",minWidth:52,textAlign:"right"}}>{val!==null?`${val}%`:"—"}</div>
+                      {val!==null&&<div style={{fontSize:10,fontWeight:800,letterSpacing:"0.1em",color:c.text,padding:"3px 8px",borderRadius:20,background:c.bg,border:`1px solid ${c.ring}`}}>{c.label}</div>}
+                    </div>
+                  </div>
+                  <input type="range" min={0} max={100} step={1} value={val??0}
+                    onChange={e=>setScore(activeManager,activeWeek,cat.id,Number(e.target.value))}
+                    style={{background:val!==null?`linear-gradient(to right,${c.ring} 0%,${c.ring} ${val}%,#1e293b ${val}%,#1e293b 100%)`:"#1e293b"}}/>
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+                    {[0,25,50,75,90,100].map(m=><div key={m} style={{fontSize:9,color:"#334155",width:0,textAlign:"center",whiteSpace:"nowrap"}}>{m}</div>)}
+                  </div>
+                  <div style={{display:"flex",gap:4,marginTop:8}}>
+                    <div style={{flex:75,height:3,borderRadius:2,background:"#ef444466"}}/>
+                    <div style={{flex:15,height:3,borderRadius:2,background:"#f59e0b88"}}/>
+                    <div style={{flex:10,height:3,borderRadius:2,background:"#22c55e88"}}/>
+                  </div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
+                    <span style={{fontSize:9,color:"#ef4444",opacity:0.7}}>Red &lt;75</span>
+                    <span style={{fontSize:9,color:"#f59e0b",opacity:0.7}}>Yellow 75–89</span>
+                    <span style={{fontSize:9,color:"#22c55e",opacity:0.7}}>Green 90+</span>
+                  </div>
+                  <div style={{marginTop:10,display:"flex",flexWrap:"wrap",gap:5}}>
+                    {cat.kpis.map(kpi=><span key={kpi} style={{fontSize:10,color:"#475569",background:"#1e293b",padding:"3px 8px",borderRadius:20}}>{kpi}</span>)}
+                  </div>
+                  {val!==null&&<button onClick={()=>setScore(activeManager,activeWeek,cat.id,null)} style={{marginTop:8,fontSize:10,color:"#475569",background:"none",border:"none",cursor:"pointer",padding:0,textDecoration:"underline"}}>Clear rating</button>}
+                </div>
+              );
+            })}
+          </div>
+          <div style={{marginTop:24,display:"flex",justifyContent:"flex-end"}}>
+            <button onClick={handleSave} style={{padding:"12px 32px",borderRadius:12,border:"none",cursor:"pointer",background:saveFlash?"linear-gradient(135deg,#16a34a,#15803d)":"linear-gradient(135deg,#0ea5e9,#6366f1)",color:"#fff",fontSize:14,fontWeight:800,letterSpacing:"0.04em",transition:"all 0.3s"}}>
+              {saveFlash?"✓ Saved!":"Save Ratings"}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
